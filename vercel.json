@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/PB30", "destination": "/pb30/index.html" },
+    { "source": "/PB30/", "destination": "/pb30/index.html" },
+    { "source": "/PB30/(.*)", "destination": "/pb30/index.html" },
+    { "source": "/pb30", "destination": "/pb30/index.html" },
+    { "source": "/pb30/", "destination": "/pb30/index.html" },
+    { "source": "/pb30/(.*)", "destination": "/pb30/index.html" }
+  ]
+}
