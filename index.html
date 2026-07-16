@@ -107,7 +107,8 @@ textarea:focus, input:focus { outline: none; border-color: var(--blue); }
 .unlock-inline p { margin: 0; color: var(--muted); font-size: 0.9rem; max-width: 420px; }
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal-backdrop.open { display: flex; }
-.modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 460px; width: 100%; position: relative; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 460px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
+.modal.modal-wide { max-width: 520px; }
 .modal .close { position: absolute; top: 16px; right: 18px; cursor: pointer; color: var(--muted); font-size: 20px; }
 .modal ul { padding-left: 18px; color: var(--text); font-size: 0.92rem; display: grid; gap: 10px; margin: 18px 0 22px; }
 .modal .price { font-family: var(--font-display); font-size: 1.6rem; color: var(--yellow); margin: 0 0 4px; }
@@ -176,19 +177,37 @@ footer.site-footer { border-top: 1px solid var(--border); padding: 30px 0; margi
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <span class="close" id="modalClose">&times;</span>
-    <p class="eyebrow">OPTIONAL UPGRADE</p>
-    <h3 class="h2" style="font-size:1.3rem">Unlock the Guided Experience</h3>
-    <p class="lede" style="font-size:0.9rem">Everything in the free workbook, plus Jordan runs you through it 1:1.</p>
-    <ul>
-      <li>4 weekly 30-minute calls with Jordan, one per week of the program</li>
-      <li>Jordan's own 50 video concepts added to yours — 100 guaranteed ideas</li>
-      <li>Hands-on help narrowing your best ideas down to the 15&ndash;20 you'll actually shoot</li>
-      <li>Direct feedback and accountability through your 7 days of live posting</li>
-    </ul>
-    <p class="price">$XXX</p>
-    <p class="price-note">Founding cohort pricing &mdash; placeholder, set your real price before launch</p>
-    <button class="btn btn-primary" id="checkoutBtn" style="width:100%">Continue to checkout</button>
-    <p class="stripe-note" id="stripeNote">Stripe checkout not yet connected — this is a preview only.</p>
+
+    <div id="modalUpsell">
+      <p class="eyebrow">OPTIONAL UPGRADE</p>
+      <h3 class="h2" style="font-size:1.3rem">Unlock the Guided Experience</h3>
+      <p class="lede" style="font-size:0.9rem">Everything in the free workbook, plus Jordan runs you through it 1:1.</p>
+      <ul>
+        <li>4 weekly 30-minute calls with veteran creator and coach Jordan Beau</li>
+        <li>Jordan will personally ideate 50 video concepts for you — 100 guaranteed ideas total</li>
+        <li>Hands-on help narrowing your best ideas down to the 15&ndash;20 you'll actually shoot</li>
+        <li>Direct feedback and accountability through your 7 days of live posting</li>
+      </ul>
+      <p class="price">$750</p>
+      <p class="price-note">One-time payment &mdash; founding cohort pricing</p>
+      <a href="https://buy.stripe.com/dRmbJ0agf3GQe2MeO40480g" class="btn btn-primary" id="checkoutBtn" style="width:100%">Continue to checkout</a>
+      <p class="stripe-note" id="stripeNote">Secure checkout powered by Stripe.</p>
+    </div>
+
+    <div id="modalSuccess" style="display:none">
+      <p class="eyebrow">YOU'RE IN</p>
+      <h3 class="h2" style="font-size:1.3rem">Book Your First Call</h3>
+      <p class="lede" style="font-size:0.9rem">Payment confirmed &mdash; grab a time below and Jordan will see you soon. No need to wait on an email.</p>
+      <div class="calendly-inline-widget" data-url="https://calendly.com/jordanbeau/jb-1-1-clone" style="min-width:280px;height:580px;"></div>
+    </div>
+
+    <div id="modalCancelled" style="display:none">
+      <p class="eyebrow">CHECKOUT CANCELLED</p>
+      <h3 class="h2" style="font-size:1.3rem">No charge was made</h3>
+      <p class="lede" style="font-size:0.9rem">Whenever you're ready, you can pick up right where you left off.</p>
+      <button class="btn btn-primary" id="tryAgainBtn" style="width:100%">Try again</button>
+    </div>
+
   </div>
 </div>
 
@@ -243,7 +262,7 @@ function section1() {
     <label class="field-label">Your WHAT</label>
     <div class="toggle-row">
       <div class="toggle-opt ${state.what.mode==='niche'?'selected':''}" id="modeNiche"><strong>Niche</strong><span>Go narrow. One tight, specific content pool.</span></div>
-      <div class="toggle-opt ${state.what.mode==='sauce'?'selected':''}" id="modeSauce"><strong>Sauce recipe</strong><span>The exact mix of traits, stories &amp; interests that's only you.</span></div>
+      <div class="toggle-opt ${state.what.mode==='sauce'?'selected':''}" id="modeSauce"><strong>Sauce recipe</strong><span>The exact mix of traits, stories &amp; interests that set you apart</span></div>
     </div>
     <div id="niecheBlock" style="display:${state.what.mode==='niche'?'block':'none'}">
       <textarea rows="2" id="nicheText" placeholder="Define your niche as specifically as you can">${state.what.niche||''}</textarea>
@@ -451,8 +470,30 @@ document.getElementById('unlockBtnFloat').addEventListener('click', openModal);
 document.getElementById('unlockBtnWeek3').addEventListener('click', openModal);
 document.getElementById('modalClose').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-document.getElementById('checkoutBtn').addEventListener('click', () => {
-  document.getElementById('stripeNote').textContent = 'Preview only — connect a real Stripe payment link to activate checkout.';
-});
+
+function loadCalendly() {
+  if (window.Calendly) return;
+  const s = document.createElement('script');
+  s.src = 'https://assets.calendly.com/assets/external/widget.js';
+  s.async = true;
+  document.body.appendChild(s);
+}
+
+const checkoutParam = new URLSearchParams(window.location.search).get('checkout');
+if (checkoutParam === 'success') {
+  document.getElementById('modalUpsell').style.display = 'none';
+  document.getElementById('modalSuccess').style.display = 'block';
+  modal.querySelector('.modal').classList.add('modal-wide');
+  loadCalendly();
+  openModal();
+} else if (checkoutParam === 'cancelled') {
+  document.getElementById('modalUpsell').style.display = 'none';
+  document.getElementById('modalCancelled').style.display = 'block';
+  openModal();
+  document.getElementById('tryAgainBtn').addEventListener('click', () => {
+    document.getElementById('modalCancelled').style.display = 'none';
+    document.getElementById('modalUpsell').style.display = 'block';
+  });
+}
 </script>
 </body></html>
